@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart'; // Import the scanner package
 
 void main() {
   runApp(const MyApp());
@@ -7,116 +8,192 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Barcode Scanner App', // Changed title
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const ScannerPage(), // Point to our new ScannerPage
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+// New StatefulWidget for our scanner page
+class ScannerPage extends StatefulWidget {
+  const ScannerPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<ScannerPage> createState() => _ScannerPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _ScannerPageState extends State<ScannerPage> {
+  // Controller for the mobile scanner
+  final MobileScannerController _scannerController = MobileScannerController(
+      // Optional: You can configure settings like torch, camera direction here
+      // facing: CameraFacing.back,
+      // torchEnabled: false,
+      // detectionSpeed: DetectionSpeed.normal, // Faster detection, more battery
+      // detectionTimeoutMs: 250, // Timeout for duplicate detections
+      returnImage: false // We don't need the image data, just the barcode
+      );
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  // Variable to hold the scanned result
+  String? _scannedBarcode;
+  Stream<BarcodeCapture>? barcodeCaptureStream;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start listening to the barcode stream immediately
+    barcodeCaptureStream = _scannerController.barcodes;
+  }
+
+  @override
+  void dispose() {
+    // Dispose the controller when the widget is disposed
+    _scannerController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+        title: const Text('Scan Barcode/QR Code'),
+        // Optional: Add actions like toggling flash
+        actions: [
+          IconButton(
+            color: Colors.white,
+            icon: ValueListenableBuilder<TorchState>(
+              valueListenable: _scannerController.torchState,
+              builder: (context, state, child) {
+                switch (state) {
+                  case TorchState.off:
+                    return const Icon(Icons.flash_off, color: Colors.grey);
+                  case TorchState.on:
+                    return const Icon(Icons.flash_on, color: Colors.yellow);
+                }
+              },
             ),
-          ],
-        ),
+            iconSize: 32.0,
+            onPressed: () => _scannerController.toggleTorch(),
+          ),
+          IconButton(
+            color: Colors.white,
+            icon: ValueListenableBuilder<CameraFacing>(
+              valueListenable: _scannerController.cameraFacingState,
+              builder: (context, state, child) {
+                switch (state) {
+                  case CameraFacing.front:
+                    return const Icon(Icons.camera_front);
+                  case CameraFacing.back:
+                    return const Icon(Icons.camera_rear);
+                }
+              },
+            ),
+            iconSize: 32.0,
+            onPressed: () => _scannerController.switchCamera(),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      body: Column( // Use a Column to stack scanner and result text
+        children: [
+          Expanded( // Scanner view should take up most space
+            flex: 4, // Give scanner more space
+            child: Stack( // Use Stack for overlay effects if needed later
+              children: [
+                MobileScanner(
+                  controller: _scannerController,
+                  // The new way to listen for barcodes using the controller's stream
+                  onDetect: (capture) {
+                    // This callback might still fire rapidly.
+                    // Consider adding throttling/debouncing logic here if needed
+                    // to prevent processing the same code multiple times per second.
+                    final List<Barcode> barcodes = capture.barcodes;
+                    // final Uint8List? image = capture.image; // We disabled this with returnImage: false
+
+                    if (barcodes.isNotEmpty) {
+                      final String? code = barcodes.first.rawValue;
+                      if (code != null && code != _scannedBarcode) { // Check if it's a new code
+                        print('Barcode detected! Raw value: $code');
+                        setState(() {
+                          _scannedBarcode = code;
+                        });
+                        // --- TODO: Add code here to send '_scannedBarcode' to your API ---
+                      }
+                    }
+                  },
+                  /* // Old onDetect (might be deprecated in future versions)
+                  onDetect: (barcode, args) {
+                     if (barcode.rawValue == null) {
+                       debugPrint('Failed to scan Barcode');
+                     } else {
+                       final String code = barcode.rawValue!;
+                       // Only update state if it's a *new* code to avoid rapid rebuilds
+                       if (code != _scannedBarcode) {
+                          print('Barcode found! $code');
+                          setState(() {
+                           _scannedBarcode = code;
+                         });
+                         // --- TODO: Add code here to send '_scannedBarcode' to your API ---
+                       }
+                     }
+                   },
+                   */
+                ),
+                // Optional: Add a viewfinder overlay widget here if desired
+                // Center(child: CustomPaint(painter: ScannerOverlayPainter())),
+              ],
+            ),
+          ),
+          Expanded( // Result display area
+            flex: 1, // Give result less space
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  _scannedBarcode == null
+                      ? 'Scan a code'
+                      : 'Scanned: $_scannedBarcode',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
+
+
+// Example for a simple overlay painter (Optional)
+/*
+class ScannerOverlayPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.red
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+
+    final rectWidth = size.width * 0.8;
+    final rectHeight = size.height * 0.4;
+    final left = (size.width - rectWidth) / 2;
+    final top = (size.height - rectHeight) / 2;
+
+    final rect = Rect.fromLTWH(left, top, rectWidth, rectHeight);
+    canvas.drawRect(rect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
+  }
+}
+*/
