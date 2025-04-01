@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart'; // Import the scanner package
+import 'package:my_barcode_app/screens/home_screen.dart';     // Import screen
+import 'package:my_barcode_app/screens/scanner_screen.dart';  // Import screen
+import 'package:my_barcode_app/screens/history_screen.dart'; // Import screen
 
 void main() {
   runApp(const MyApp());
@@ -11,172 +13,68 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Barcode Scanner App', // Changed title
+      title: 'Barcode Scanner App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const ScannerPage(), // Point to our new ScannerPage
+      home: const AppShell(), // Use AppShell as the main structure
     );
   }
 }
 
-// New StatefulWidget for our scanner page
-class ScannerPage extends StatefulWidget {
-  const ScannerPage({super.key});
+// This Widget manages the main app structure including the BottomNavBar
+class AppShell extends StatefulWidget {
+  const AppShell({super.key});
 
   @override
-  State<ScannerPage> createState() => _ScannerPageState();
+  State<AppShell> createState() => _AppShellState();
 }
 
-class _ScannerPageState extends State<ScannerPage> {
-  // Controller for the mobile scanner
-  final MobileScannerController _scannerController = MobileScannerController(
-      // Optional: You can configure settings like torch, camera direction here
-      // facing: CameraFacing.back,
-      // torchEnabled: false,
-      // detectionSpeed: DetectionSpeed.normal, // Faster detection, more battery
-      // detectionTimeoutMs: 250, // Timeout for duplicate detections
-      returnImage: false // We don't need the image data, just the barcode
-      );
+class _AppShellState extends State<AppShell> {
+  int _selectedIndex = 0; // Index for the currently selected tab
 
-  // Variable to hold the scanned result
-  String? _scannedBarcode;
-  Stream<BarcodeCapture>? barcodeCaptureStream;
+  // List of the widgets (Screens) to display in the body
+  static const List<Widget> _widgetOptions = <Widget>[
+    HomeScreen(),
+    ScannerScreen(),
+    HistoryScreen(),
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    // Start listening to the barcode stream immediately
-    barcodeCaptureStream = _scannerController.barcodes;
-  }
-
-  @override
-  void dispose() {
-    // Dispose the controller when the widget is disposed
-    _scannerController.dispose();
-    super.dispose();
+  // Function called when a tab is tapped
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Scan Barcode/QR Code'),
-        actions: [
-          // Simplified Flash Toggle Button
-          IconButton(
-            color: Colors.white, // Or adjust color as needed
-            icon: const Icon(Icons.flash_on), // Use a static icon
-            tooltip: 'Toggle Flash', // Tooltip is helpful
-            iconSize: 32.0,
-            onPressed: () => _scannerController.toggleTorch(), // Action remains the same
-          ),
-          // Simplified Camera Switch Button
-          IconButton(
-            color: Colors.white, // Or adjust color as needed
-            icon: const Icon(Icons.switch_camera), // Use a static icon
-            tooltip: 'Switch Camera', // Tooltip is helpful
-            iconSize: 32.0,
-            onPressed: () => _scannerController.switchCamera(), // Action remains the same
-          ),
-        ],
+      // Body displays the widget from _widgetOptions based on the selected index
+      body: Center(
+        child: _widgetOptions.elementAt(_selectedIndex),
       ),
-      body: Column( // Use a Column to stack scanner and result text
-        children: [
-          Expanded( // Scanner view should take up most space
-            flex: 4, // Give scanner more space
-            child: Stack( // Use Stack for overlay effects if needed later
-              children: [
-                MobileScanner(
-                  controller: _scannerController,
-                  // The new way to listen for barcodes using the controller's stream
-                  onDetect: (capture) {
-                    // This callback might still fire rapidly.
-                    // Consider adding throttling/debouncing logic here if needed
-                    // to prevent processing the same code multiple times per second.
-                    final List<Barcode> barcodes = capture.barcodes;
-                    // final Uint8List? image = capture.image; // We disabled this with returnImage: false
-
-                    if (barcodes.isNotEmpty) {
-                      final String? code = barcodes.first.rawValue;
-                      if (code != null && code != _scannedBarcode) { // Check if it's a new code
-                        print('Barcode detected! Raw value: $code');
-                        setState(() {
-                          _scannedBarcode = code;
-                        });
-                        // --- TODO: Add code here to send '_scannedBarcode' to your API ---
-                      }
-                    }
-                  },
-                  /* // Old onDetect (might be deprecated in future versions)
-                  onDetect: (barcode, args) {
-                     if (barcode.rawValue == null) {
-                       debugPrint('Failed to scan Barcode');
-                     } else {
-                       final String code = barcode.rawValue!;
-                       // Only update state if it's a *new* code to avoid rapid rebuilds
-                       if (code != _scannedBarcode) {
-                          print('Barcode found! $code');
-                          setState(() {
-                           _scannedBarcode = code;
-                         });
-                         // --- TODO: Add code here to send '_scannedBarcode' to your API ---
-                       }
-                     }
-                   },
-                   */
-                ),
-                // Optional: Add a viewfinder overlay widget here if desired
-                // Center(child: CustomPaint(painter: ScannerOverlayPainter())),
-              ],
-            ),
+      // Bottom Navigation Bar setup
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
           ),
-          Expanded( // Result display area
-            flex: 1, // Give result less space
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  _scannedBarcode == null
-                      ? 'Scan a code'
-                      : 'Scanned: $_scannedBarcode',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.qr_code_scanner),
+            label: 'Scan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'History',
           ),
         ],
+        currentIndex: _selectedIndex, // Highlights the current tab
+        selectedItemColor: Colors.deepPurple, // Color for selected tab
+        onTap: _onItemTapped, // Function to call when a tab is tapped
       ),
     );
   }
 }
-
-
-// Example for a simple overlay painter (Optional)
-/*
-class ScannerOverlayPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.red
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-
-    final rectWidth = size.width * 0.8;
-    final rectHeight = size.height * 0.4;
-    final left = (size.width - rectWidth) / 2;
-    final top = (size.height - rectHeight) / 2;
-
-    final rect = Rect.fromLTWH(left, top, rectWidth, rectHeight);
-    canvas.drawRect(rect, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
-}
-*/
