@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  // Define a final callback variable
+  final VoidCallback onNavigateToScanner; // VoidCallback is shorthand for Function()
+
+  // Update the constructor to accept the callback
+  const HomeScreen({
+    super.key,
+    required this.onNavigateToScanner, // Make it required
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,24 +22,15 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text(
-              'Welcome, User!', // Placeholder for logged-in user
+              'Welcome, User!',
               style: TextStyle(fontSize: 24),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                // Find the AppShell state and tell it to switch tabs
-                // We'll implement _AppShellState later in main.dart
-                // For now, this shows the intent. A better way might involve
-                // a shared state management solution later (Provider, Riverpod, etc.)
-                DefaultTabController.of(context)?.animateTo(1); // Assuming Scanner is index 1
-                // Note: This direct jump might be better handled via state management
-              },
+              // Use the passed-in callback directly
+              onPressed: onNavigateToScanner,
               child: const Text('Go to Scanner'),
             ),
-            // We might need a more robust way to switch tabs from within a screen
-            // later, possibly using a state management solution.
-            // For now, this structure outlines the intent.
           ],
         ),
       ),

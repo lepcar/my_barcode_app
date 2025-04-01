@@ -34,15 +34,10 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0; // Index for the currently selected tab
 
-  // List of the widgets (Screens) to display in the body
-  static const List<Widget> _widgetOptions = <Widget>[
-    HomeScreen(),
-    ScannerScreen(),
-    HistoryScreen(),
-  ];
-
   // Function called when a tab is tapped
   void _onItemTapped(int index) {
+    // Prevent navigation if already on the target screen
+    if (_selectedIndex == index) return;
     setState(() {
       _selectedIndex = index;
     });
@@ -50,15 +45,22 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+
+    final List<Widget> widgetOptions = <Widget>[
+      HomeScreen(onNavigateToScanner: () => _onItemTapped(1)), // Pass callback
+      const ScannerScreen(),
+      const HistoryScreen(),
+    ];
+
     return Scaffold(
-      // Body displays the widget from _widgetOptions based on the selected index
+      // Use the locally defined list
       body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
+        child: widgetOptions.elementAt(_selectedIndex),
       ),
-      // Bottom Navigation Bar setup
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
+          // ... (items remain the same) ...
+           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
           ),
@@ -71,9 +73,9 @@ class _AppShellState extends State<AppShell> {
             label: 'History',
           ),
         ],
-        currentIndex: _selectedIndex, // Highlights the current tab
-        selectedItemColor: Colors.deepPurple, // Color for selected tab
-        onTap: _onItemTapped, // Function to call when a tab is tapped
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.deepPurple,
+        onTap: _onItemTapped, // Use the method directly here
       ),
     );
   }
