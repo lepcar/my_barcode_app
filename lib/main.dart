@@ -64,39 +64,22 @@ class _ScannerPageState extends State<ScannerPage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Scan Barcode/QR Code'),
-        // Optional: Add actions like toggling flash
         actions: [
+          // Simplified Flash Toggle Button
           IconButton(
-            color: Colors.white,
-            icon: ValueListenableBuilder<TorchState>(
-              valueListenable: _scannerController.torchState,
-              builder: (context, state, child) {
-                switch (state) {
-                  case TorchState.off:
-                    return const Icon(Icons.flash_off, color: Colors.grey);
-                  case TorchState.on:
-                    return const Icon(Icons.flash_on, color: Colors.yellow);
-                }
-              },
-            ),
+            color: Colors.white, // Or adjust color as needed
+            icon: const Icon(Icons.flash_on), // Use a static icon
+            tooltip: 'Toggle Flash', // Tooltip is helpful
             iconSize: 32.0,
-            onPressed: () => _scannerController.toggleTorch(),
+            onPressed: () => _scannerController.toggleTorch(), // Action remains the same
           ),
+          // Simplified Camera Switch Button
           IconButton(
-            color: Colors.white,
-            icon: ValueListenableBuilder<CameraFacing>(
-              valueListenable: _scannerController.cameraFacingState,
-              builder: (context, state, child) {
-                switch (state) {
-                  case CameraFacing.front:
-                    return const Icon(Icons.camera_front);
-                  case CameraFacing.back:
-                    return const Icon(Icons.camera_rear);
-                }
-              },
-            ),
+            color: Colors.white, // Or adjust color as needed
+            icon: const Icon(Icons.switch_camera), // Use a static icon
+            tooltip: 'Switch Camera', // Tooltip is helpful
             iconSize: 32.0,
-            onPressed: () => _scannerController.switchCamera(),
+            onPressed: () => _scannerController.switchCamera(), // Action remains the same
           ),
         ],
       ),
